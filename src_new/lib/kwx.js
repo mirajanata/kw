@@ -63,11 +63,13 @@ export let kwx = {
             Math.abs(word.length - kw.label.length) < 4 &&
             distance(kwJoined, word) <= distLimit
           ) {
-            foundKeywords.add(kw);
-            break; // small optimization
+            if (foundKeywords.entries().find(a=> (' '+a[1].label+' ').indexOf(' '+kw.label+' ')!=-1)==undefined) {
+              foundKeywords.add(kw);
+              break; 
+            }
           }
         }
-      }
+      } 
 
       // --- Add contextual keywords ---
       const kwURIs = foundKeywords.entries().map(a => a[1].uri).toArray();
@@ -163,7 +165,7 @@ export let kwx = {
 
   generateSearchArray(words, maxN) {
     let all = [];
-    for (let i = 1; i <= maxN; i++) {
+    for (let i = maxN; i >= 1; i--) {
       all.push(...this.createNGrams(words, i));
     }
     return all;

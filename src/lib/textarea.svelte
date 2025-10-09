@@ -89,7 +89,8 @@
         euroscivoc: kwFormat.specific ? euroscivoc:null,
         detailedOutput: true,
         detailedOutputFunction:(item)=>{
-          rout += item.line + '\n\n\t' +  item.keywords.map(a => formatKeyword(a.label, a.uri)).join('') + '\n';          
+          rout += item.line + '\n\n\t' +  item.keywords.map(a => formatKeyword(a.label, a.uri)).join('') + '\n';
+          rout += '————————————————————————————————————————————————————\n';
         }
       }
     );
@@ -180,6 +181,11 @@
       kwCount += keywords.length;
     }
     let time = (performance.now() - start)/1000;
+
+    newContent += '————————————————————————————————————————————————————\n'
+    newContent += '————————————————————————————————————————————————————\n'
+    newContent += rout;
+
     modifiedContent = newContent;
     prg = 'analysed ' + content.length + ' texts, in ' + ((performance.now() - start)/1000).toFixed(2) + 's, avg. ' + Math.round(kwCount/(content.length==0?1:content.length)) + ' of total ' +  kwCount + ' keywords';
   }

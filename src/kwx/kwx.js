@@ -21,7 +21,7 @@ export let kwx = {
   
   async getKeywordList(content, options) {
     options = {...this.options, ...options};
-    const {
+    let {
       maxN,
       keywords,
       atx, 
@@ -37,9 +37,11 @@ export let kwx = {
     let counter = 0;
     this.progress = 0;
 
+    keywords = await keywords;
     for (const kw of keywords) {
         kw.kwJoined = kw.newLabelArr.join('');
     }
+    const doSummary = (summaryOutputFunction || !detailedOutput);
     const summary = new Set();
     const result = [];
     const foundKeywords = new Set();
@@ -115,24 +117,26 @@ export let kwx = {
         result.push(output);
         if (detailedOutputFunction) 
           detailedOutputFunction(output);
-      } else {
+      } 
+      if (doSummary) {
         foundKeywords.forEach(summary.add, summary);
       }
     }
 
-    if (detailedOutput)
-      return {
-      detailedOutput: result,
-      time:((performance.now() - start)/1000)
-    };
-
-    let output = {
+    let summaryOutput = doSummary ?
+    {
       summary: Array.from(summary),
       time:((performance.now() - start)/1000)
-    };
+    }: null;
+
     if (summaryOutputFunction)
-      summaryOutputFunction(output);
-    return output;
+      summaryOutputFunction(summaryOutput);
+
+    return detailedOutput ? {
+      detailedOutput: result,
+      time:((performance.now() - start)/1000)
+    }:
+    summaryOutput;
   },
 
 // --- Utility Methods ---

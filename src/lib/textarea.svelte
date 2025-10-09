@@ -182,8 +182,7 @@
     }
     let time = (performance.now() - start)/1000;
 
-    newContent += '————————————————————————————————————————————————————\n'
-    newContent += '————————————————————————————————————————————————————\n'
+    newContent += '————————————————————— kwx version ——————————————————\n'
     newContent += rout;
 
     modifiedContent = newContent;

@@ -63,7 +63,8 @@ export let kwx = {
             Math.abs(word.length - kw.label.length) < 4 &&
             distance(kwJoined, word) <= distLimit
           ) {
-            if (foundKeywords.entries().find(a=> (' '+a[1].label+' ').indexOf(' '+kw.label+' ')!=-1)==undefined) {
+            let kwl=' '+kw.label+' ';
+            if (foundKeywords.entries().find(a=> (' '+a[1].label+' ').indexOf(kwl)!=-1)==undefined) {
               foundKeywords.add(kw);
               break; 
             }

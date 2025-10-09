@@ -3,7 +3,7 @@
   import keyword_extractor from 'keyword-extractor';
   import { distance } from 'fastest-levenshtein';
 
-  import { kwx } from '../../src_new/lib/kwx.js'
+  import { kwx } from '../kwx/kwx.js'
 
   let fileContent, fileName, keywords
   let modifiedContent = '';
@@ -101,7 +101,7 @@
     kwCount = 0;
     //console.log(content)
     // iterate over each line of the content
-    for (const entry of content.filter(a=>a!='')) {
+    for (const entry of content.filter(a=>!(!a))) {
       counter += 1;
       prg = (counter / content.length * 100).toString().split('.')[0] + '%';
       await new Promise(resolve => setTimeout(resolve, 10)); // Wait 1 second

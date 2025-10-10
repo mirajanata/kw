@@ -55,7 +55,7 @@ export let kwx = {
       this.progress = Math.floor(counter / lines.length * 100);
       
       const words = this.extractKeywords(entryLower, options, false);
-      const searchArr = this.generateSearchArray(words, maxN);
+      const searchedWords = this.generateSearchArray(words, maxN);
       foundKeywords.clear();
 
       // --- Check similarity between text and thesaurus keywords ---
@@ -63,7 +63,7 @@ export let kwx = {
         const kwJoined = kw.kwJoined;
         const distLimit = this.calDist(kwJoined.length);
 
-        for (const word of searchArr) {
+        for (const word of searchedWords) {
           if (
             word[0] == kwJoined[0] &&
             Math.abs(word.length - kw.label.length) < 4 &&

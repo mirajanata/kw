@@ -7,7 +7,6 @@ export let kwx = {
     maxN: 4, // max number of words in a keyword (N-word generalization)
     maxLength: 40,
     language: 'english',
-    sleepDelay: 5,
     extractExceptions: ['well', 'causes'],
     keywords: null,
     atx: null,

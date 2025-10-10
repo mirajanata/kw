@@ -181,8 +181,4 @@ export let kwx = {
   },
 
   progress: 0
-
 };
-
-let keywordExtractor = kwx;
-export default keywordExtractor;

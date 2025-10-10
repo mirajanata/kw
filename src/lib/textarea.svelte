@@ -94,6 +94,7 @@
         }
       }
     );
+    console.log("kwx time(s):"+r.time);
 
     let start = performance.now()
 
@@ -181,6 +182,7 @@
       kwCount += keywords.length;
     }
     let time = (performance.now() - start)/1000;
+    console.log("textarea time(s):"+time);
 
     newContent += '————————————————————— kwx version ——————————————————\n'
     newContent += rout;

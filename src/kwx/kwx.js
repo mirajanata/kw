@@ -174,9 +174,10 @@ export let kwx = {
 
   generateSearchArray(words, maxN) {
     let all = [];
-    for (let i = maxN; i >= 1; i--) {
+    for (let i = maxN; i >= 2; i--) {
       all.push(...this.createNGrams(words, i));
     }
+    all.push(...words);
     return all;
   },
 

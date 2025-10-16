@@ -43,9 +43,10 @@
   //let problematic = ['cation', 'geology', 'information', 'containment', 'granite', 'mass wasting', 'capping', 'primary', 'polder', 'coast', 'rock', 'placer', 'atmospheric causes', 'joint', 'copper'];
 
   let prg = '0%';
+  $: prg = (kwx.progress).toString().split('.')[0] + '%';
 
    async function getKeywords(){
-
+    kwx.progress=0;
     let content = modifiedContent.split('\n');
     //modifiedContent = '';
     let newContent = '';
@@ -69,9 +70,13 @@
         country: kwFormat.geonames ? country: null,
         euroscivoc: kwFormat.specific ? euroscivoc:null,
         detailedOutput: true,
-        detailedOutputFunction:(item)=>{
+        detailedOutputFunction: async (item)=> {
           rout += item.line + '\n\n\t' +  item.keywords.map(a => formatKeyword(a.label, a.uri)).join('') + '\n';
           rout += '————————————————————————————————————————————————————\n';
+          if (kwx.progress%10==0) {
+            kwx.progress = kwx.progress;
+            // todo: propagate to svelte?
+          }
         }
       }
     );

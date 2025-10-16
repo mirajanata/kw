@@ -33,10 +33,9 @@ export let kwx = {
 
     const start = performance.now();
     const lines = content.split('\n');
-    let counter = 0;
+    let counter = 0,  kwCount = 0;
     this.progress = 0;
 
-    keywords = await keywords;
     for (const kw of keywords) {
         kw.kwJoined = kw.newLabelArr.join('');
     }
@@ -120,12 +119,14 @@ export let kwx = {
       if (doSummary) {
         foundKeywords.forEach(summary.add, summary);
       }
+      kwCount += foundKeywords.size;
     }
 
     let summaryOutput = doSummary ?
     {
       summary: Array.from(summary),
-      time:((performance.now() - start)/1000)
+      time:((performance.now() - start)/1000),
+      kwCount: kwCount
     }: null;
 
     if (summaryOutputFunction)
@@ -133,7 +134,8 @@ export let kwx = {
 
     return detailedOutput ? {
       detailedOutput: result,
-      time:((performance.now() - start)/1000)
+      time:((performance.now() - start)/1000),
+      kwCount: kwCount
     }:
     summaryOutput;
   },
@@ -180,5 +182,5 @@ export let kwx = {
     return all;
   },
 
-  progress: 0
+  progress: 0,
 };

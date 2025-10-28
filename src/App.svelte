@@ -7,7 +7,7 @@
   import KeywordStyle from "./lib/keywordStyle.svelte";
   import Keyword from './lib/keyword.svelte';
   import Textarea from './lib/textarea.svelte';
-
+  import LdcPage from './lib/ldcPage.svelte';
 
 
 
@@ -19,6 +19,7 @@
   
   <Grid xs={12} lg={8}><Textarea /></Grid>
   <Grid xs={12} lg={4}><Keyword /></Grid>
+  <Grid xs={12} lg={8}><LdcPage /></Grid>
 </Grid> 
 
 <!-- 

@@ -1,7 +1,5 @@
 <script>
   import { allKeywords, kwFormat, formatKeyword, atx, country, euroscivoc, ignoreKw } from './shared.svelte'
-  import keyword_extractor from 'keyword-extractor';
-  import { distance } from 'fastest-levenshtein';
 
   import { kwx } from '../kwx/kwx.js'
 
@@ -48,17 +46,14 @@
    async function getKeywords(){
     kwx.progress=0;
     let content = modifiedContent.split('\n');
-    //modifiedContent = '';
     let newContent = '';
     // filter out keywords with more than 4 words and more than 40 characters
     let filteredKeywords = await allKeywords.arr
       .filter(a => (a.newLabelArr.length < 5 && a.len < 40))
       .filter(a => !problematic.includes(a.label)); 
-      //console.log('filteredKeywords: ', filteredKeywords);
 
     if (kwFormat.significant){
       filteredKeywords = filteredKeywords.filter(a => ignoreKw.indexOf(`-${a.uri.split('/')[6]}-`) == -1);
-      console.log('filteredKeywords: ', filteredKeywords);
     }  
 
     let rout = "";

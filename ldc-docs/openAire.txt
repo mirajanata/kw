@@ -1,0 +1,79 @@
+OpenAIRE REST API, (develop.openaire.eu) GET https://api.openaire.eu/graph/v1/projects?keywords=geological%20survey&page=1&pageSize=50
+or
+OpenAIRE Explore Web Portal (for manual searches, explore.openaire.eu)
+or
+https://services.openaire.eu/search/v2/api/resources2/?format=json&type=organizations&query=((\"geological survey\") and (\"europe\"))
+
+-> OpenAIRE Graph (Linked Open Data, api.opencitations.net/meta/v1)
+- query organisations (list of IDs in config.js), their projects plus related organisations
+- extract info of all organisations (oa_ID, shortName, name, homepage, country) and all projects (oa_ID, name, description, acronym (ascii), startDate, endDate, budget), and relations
+- calculate new URIs for organisations (host domain) and projects (acronym)
+- create keywords for projects (name, description using Keyword Assistant js)
+- transform into NT triples structure
+
+example: 
+<https://org.europe-geology.eu/acri-st-fr> <http://data.europa.eu/s66#Country> "France" .
+<https://org.europe-geology.eu/acri-st-fr> <http://data.europa.eu/s66#shortForm> "ACRI-ST" .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/identifier> "pending_org_::92b9ac16907f563eeb6fac6ad667f46c" .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/aquamar> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/ccvs> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/epn-2024-ri> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/euro-argo-rise> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/eurosea> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/genesis> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/jerico-s3> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/myocean-fo> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/myocean> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/myocean2> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/pasodoble> .
+<https://org.europe-geology.eu/acri-st-fr> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/safi> .
+<https://org.europe-geology.eu/acri-st-fr> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Organization> .
+<https://org.europe-geology.eu/acri-st-fr> <http://www.w3.org/2000/01/rdf-schema#label> "ACRI ST SAS" .
+<https://org.europe-geology.eu/acri-st-fr> <http://xmlns.com/foaf/0.1/page> <http://www.acri-st.fr> .
+<https://proj.europe-geology.eu/ccvs> <http://data.europa.eu/s66#endDate> "2022-11-30" .
+<https://proj.europe-geology.eu/ccvs> <http://data.europa.eu/s66#hasTotalCost> "3053200" .
+<https://proj.europe-geology.eu/ccvs> <http://data.europa.eu/s66#shortForm> "CCVS" .
+<https://proj.europe-geology.eu/ccvs> <http://data.europa.eu/s66#startDate> "2020-12-01" .
+<https://proj.europe-geology.eu/ccvs> <http://purl.org/dc/terms/description> "The objective of .." .
+<https://proj.europe-geology.eu/ccvs> <http://purl.org/dc/terms/identifier> "corda__h2020::6671eada0667c9fe92716325603e9132" .
+<https://proj.europe-geology.eu/ccvs> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Project> .
+<https://proj.europe-geology.eu/ccvs> <http://www.w3.org/2000/01/rdf-schema#label> "Copernicus CAL/VAL Solution" .
+<https://proj.europe-geology.eu/ccvs> <http://purl.org/dc/terms/subject> <https://data.geoscience.earth/ncl/geoera/keyword/2061> .
+
+- N-triples (.nt) für eine oder mehr Properties Download (zB oa_org-proj_rel.nt)
+pattern: "resource _ class(es) (_rel).nt"
+
+---------------------------------------------------------------------------
+ERRORS
+
+fehlender Zeilenumbruch, <> <> <> .<> <> <>.
+http//www.uvs.edu -> http://www.uvs.edu
+
+-\n suchen
+
+<https://org.europe-geology.eu/-http:> <http://xmlns.com/foaf/0.1/page> <http://-http://www.bruxelles.irisnet.be/> .
+<http://www.vliz.be/ > .
+-toward-a-future-proof-skilled-smart-industry> <http://www.w3.org/2000/01/rdf-schema#label> "Smart Skills @ Scale (S@S) inca
+Deep-HEAT-Flows, DeepForams, defacto, etc SHAREHOUSE!! SISMOD / LISMOT <https://proj.europe-geology.eu/smart-skills-scale-s-s-
+<https://proj.europe-geology.eu/in-or-out-of-employment-
+kill?spill
+ - www-svlab-asu-com.  www-glendimplex-co-uk.  , www-upkm-sk
+www.marnet.mk>
+
+-------------------------------------
+examples: 
+
+http://api.openaire.eu/search/projects?size=1&format=json&sortBy=projectstartdate,descending&participantAcronyms=BRGM
+
+https://api.openaire.eu/graph/organizations?pid=https://ror.org/0576by029
+----------other----------------------
+
+https://api.openaire.eu/graph/projects?relOrganizationId=pending_org_::0c4ca9e54243aa895bcf6c9b8eb8fa17&fromStartDate=2014-01-01&page=1&pageSize=100
+
+
+https://api.openaire.eu/graph/researchProducts?search=%22knowledge%20graphs%22&page=1&pageSize=10&sortBy=influence%20DESC
+
+https://api.openaire.eu/graph/projects?relOrganizationId=pending_org_::0c4ca9e54243aa895bcf6c9b8eb8fa17&fromStartDate=2014-01-01&pageSize=100
+
+http://api.openaire.eu/search/projects?size=1&format=json&sortBy=projectstartdate,descending&participantAcronyms=BRGM
+

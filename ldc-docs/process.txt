@@ -1,0 +1,23 @@
+OpenAIRE organizations (step 1)
+Query example:
+https://services.openaire.eu/search/v2/api/organizations/ [org ID] ?format=json
+
+
+OpenAIRE projects (step 2)
+URI generation:
+id = acronym => lower case, special characters removed, blank spaces to minus, of projects acronym
+mapped to: OpenAIRE, EGR, CORDIS, .. (same as 1:n)
+e.g. https://proj.europe-geology.eu/geoera 
+Query example:
+https://services.openaire.eu/search/v2/api/projects/ [project ID] ?format=json
+
+
+Micka (CSW summary)
+Query example:
+https://egdi.geology.cz/csw?service=cswSERVICE=CSW&VERSION=2.0.2&request=GetRecordById&Id=fd6de403-483a-49dc-9c34-d160f4c87b32&outputSchema=http://www.opengis.net/cat/csw/2.0.2&outputFormat=application/xml&resultType=results&ElementSetName=summary  
+
+
+Micka (analysis)
+Query example:
+https://egdi.geology.cz/csw?SERVICE=CSW&VERSION=2.0.2&request=GetRecords&typeNames=csw:Record&outputSchema=http://www.opengis.net/cat/csw/2.0.2&outputFormat=application/xml&resultType=results&ElementSetName=full&MAXRECORDS=500  
+

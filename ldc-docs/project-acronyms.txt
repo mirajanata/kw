@@ -1,0 +1,21 @@
+1) a possible algorithm to create new identifiers from project acronyms:
+
+
+    .normalize("NFD")                       // Unicode-Normalising
+
+    .replace(/[\u0300-\u036f]/g, "")    // Diakritika
+
+    .toLowerCase()
+
+    .replace(/[^a-z0-9]/g, "-");            // only a-z and 0-9
+
+    .replace(/-+/g, '-');                        //multi – to a single -
+
+2) to create identifiers for organisations just take host and top level domain from home page e.g.: remove protocol, www, en-subdomain, path and every thing afterwards
+
+
+https://continentalshelf.gov.mt -> https://org.europe-geology.eu/continentalshelf-gov-mt
+
+https://www.geozavodrs.com -> https://org.europe-geology.eu/geozavodrs-com
+
+https://www.tno.nl/nl/ -> https://org.europe-geology.eu/tno-nl

@@ -7,9 +7,11 @@
   let modifiedContent = '';
 
   async function getData() {
-    let r = await Ldc.getOrgsAndProjectsText();
-
-    modifiedContent = r;
+    const newWindow = window.open("", "ldc");
+    newWindow.document.open();
+    await Ldc.getOrgsAndProjectsText((text)=>{
+        newWindow.document.write(text);
+    });
   }
 
 </script>

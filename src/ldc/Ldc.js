@@ -28,13 +28,13 @@ export let Ldc={
         return r;
     },
 
-    getOrgsAndProjectsList: async function() {
+    processOrgsAndProjectsList: async function(orgFunction) {
         let result = [];
         this.taskCount = 0;
         let tasks = [];
         for (let source of this.sources) {
             this.taskCount++;
-            let r = await source.getOrgsAndProjectsList();
+            let r = await source.processOrgsAndProjectsList(orgFunction);
             this.normalizeData(r);
             if (r) {
                 result.push(...r);
@@ -74,9 +74,10 @@ export let Ldc={
         }
     },
 
-    getOrgsAndProjectsText: async function() {
-        let orgs = await this.getOrgsAndProjectsList();
-        let r = '';
+    getOrgsAndProjectsText: async function(writerFunc) {
+        let orgs = await this.processOrgsAndProjectsList((text)=>{
+            
+        });
         for (let org of orgs) {
             let item = 
 `
@@ -87,7 +88,8 @@ export let Ldc={
 <${org.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${org.name}" .
 <${org.identifier}> <http://xmlns.com/foaf/0.1/page> <${org.websiteurl}> .
 `;
-            r += item;
+            writerFunc(item);
+
             for ( let p of org.projects) {
                 item = 
 `
@@ -100,10 +102,8 @@ export let Ldc={
 <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Project> .
 <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${p.projectTitle}" .
 `;              
-                r += item;
-
                 for ( let rel of p.relations) {
-                    r +=
+                    item +=
 `<https://org.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .
 `;                    
                 }
@@ -111,14 +111,14 @@ export let Ldc={
                 let kwList = await this.getKeywords(p.description);
 
                 for ( let kw of kwList.summary ) {
-                    r+= 
+                    item += 
 `<https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
 `
 
                 }
+                writerFunc(item);
             }
         }
-        return r;
     }
 
 };

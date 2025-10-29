@@ -2,7 +2,7 @@ import { Ldc } from '../ldc/Ldc.js';
 
 export let OpenAIRE={
     taskCount: 0,
-    getOrgsAndProjectsList: async function() {
+    processOrgsAndProjectsList: async function(orgFunction) {
         let result = [];
         this.taskCount = 0;
         let tasks = [];
@@ -21,16 +21,16 @@ export let OpenAIRE={
                     projects:[]
                 };
                 for (let p of r.links.filter((l)=>l.header.relationType=="projectOrganization")) {
-                    let project;
-                    o.projects.push( 
-                        project = {
+                    if (p.acronym) {
+                        let project = {
                             acronym: p.acronym,
                             code: p.code,
                             projectTitle: p.projectTitle,
                             startDate: p.startDate,
                             endDate: p.endDate
                         }
-                    );
+                        o.projects.push(project);
+                    }
                 }
                 result.push(o);
                 this.taskCount--;
@@ -40,20 +40,23 @@ export let OpenAIRE={
         await Promise.all(tasks);
         this.taskCount = 0;
 
-        tasks = [];
+        //tasks = [];
         for( let org of result) {
             for (let p of org.projects) {
-                tasks.push(this.augmentProjectData(p));
+                await this.augmentProjectData(p);
             }
+            orgFunction(org);
+            org.projects = null;
         }
-        await Promise.all(tasks);
+        //await Promise.all(tasks);
 
         return result;
     },
 
     augmentProjectData: async function(p) {
         await fetch(this.config.project.query.replaceAll("{acronym}", p.acronym)).then(res => res.json()).then((r)=>{
-            for (let result of r.response.results.result) {
+            if (r.response.results)
+                for (let result of r.response.results.result) {
                 let pd = result.metadata["oaf:entity"]["oaf:project"];
                 p.id = result.header["dri:objIdentifier"]["$"];                
                 p.description = pd.summary?pd.summary["$"]: "";

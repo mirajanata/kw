@@ -33,12 +33,18 @@ export let Ldc = {
     taskCount: 0,
     sources: [],
     orgFunction: null,
+    progress: 0,
+    progressSource: "",
+    consoleOutput: function (text) {
+        console.log(text);
+    },
 
     addSource: function (s) {
         this.sources.push(s);
     },
 
     createOrgsAndProjectsData: async function (writerFunc) {
+        Ldc.progress = 0;
         let orgs = await this.processOrgsAndProjectsList(async (org) => {
             let item =
                 `
@@ -52,8 +58,8 @@ export let Ldc = {
             writerFunc(item);
 
             for (let p of org.projects) {
-                console.log(p.acronym);
-                item =`
+                Ldc.consoleOutput(p.acronym);
+                item = `
     <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#endDate> "${p.endDate}" .
     <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#hasTotalCost> "${p.totalCost}" .
     <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#shortForm> "${p.acronym}" .
@@ -65,8 +71,8 @@ export let Ldc = {
 `;
                 writerFunc(item);
                 item = '';
-                if (p.acronym=="ECCSEL") {
-                    item="";
+                if (p.acronym == "ECCSEL") {
+                    item = "";
                 }
                 if (p.relations) for (let rel of p.relations) {
                     item += `
@@ -78,7 +84,7 @@ export let Ldc = {
 
                 for (let kw of kwList.summary) {
                     item += `
-        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .`                
+        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .`
                 }
                 writerFunc(item);
             }
@@ -93,6 +99,7 @@ export let Ldc = {
         this.orgFunction = orgFunction;
         for (let source of this.sources) {
             this.taskCount++;
+            Ldc.progressSource = source.name;
             await source.processOrgsAndProjectsList(this.callOrgFunction);
             this.taskCount--;
         }

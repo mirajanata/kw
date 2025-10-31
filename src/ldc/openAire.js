@@ -1,6 +1,7 @@
 import { Ldc } from '../ldc/Ldc.js';
 
 export let OpenAIRE = {
+    name: "OpenAIRE",
     config: {
         org: {
             query: "https://services.openaire.eu/search/v2/api/organizations/{id}?format=json",
@@ -82,6 +83,7 @@ export let OpenAIRE = {
     processOrgsAndProjectsList: async function (orgFunction) {
         this.taskCount = 0;
         let tasks = [];
+        let index = Ldc.progress = 0;
         for (let org of this.config.org.list) {
             this.taskCount++;
             // read org data
@@ -100,7 +102,7 @@ export let OpenAIRE = {
                     projects: [],
                     relations: []
                 };
-                console.log("-------- org: " + org.name + " - " + org.id + " ----------------");
+                Ldc.consoleOutput("-------- org: " + org.name + " - " + org.id + " ----------------");
                 // read projects data
                 for (let p of r.links.filter((l) => l.header.relationType == "projectOrganization")) {
                     if (p.acronym) {
@@ -120,12 +122,14 @@ export let OpenAIRE = {
                         await this.augmentProjectData(p);
                     }
                 }
+                index++;
+                Ldc.progress = Math.floor(100*index/this.config.org.list.length);
                 // call output
                 await orgFunction(o);
                 o.projects = null;
             }
             catch (error) {
-                console.log("ERROR reading organization data for " + org.name + " - " + org.id);
+                Ldc.consoleOutput("ERROR reading organization data for " + org.name + " - " + org.id);
             }
             this.taskCount--;
         }

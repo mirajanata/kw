@@ -1,33 +1,48 @@
 <script>
+  import { kwx } from "../kwx/kwx.js";
+  import { Ldc } from "../ldc/Ldc.js";
+  import { OpenAIRE } from "../ldc/OpenAIRE.js";
 
-  import { kwx } from '../kwx/kwx.js'
-  import { Ldc } from '../ldc/Ldc.js';
-  import { OpenAIRE } from '../ldc/OpenAIRE.js';
+  let textFile = null;
+  function saveLdcFile(text) {
+    console.log("----------------------- saveLdcFile -------------------------------");
+    var data = new Blob([text], { type: "text/plain" });
 
-  let modifiedContent = '';
+    // If we are replacing a previously generated file we need to
+    // manually revoke the object URL to avoid memory leaks.
+    if (textFile !== null) {
+      window.URL.revokeObjectURL(textFile);
+    }
 
-  async function getData() {
-    const newWindow = window.open("", "ldc");
-    newWindow.document.open();
-    await Ldc.getOrgsAndProjectsText((text)=>{
-        newWindow.document.write(text);
-    });
+    textFile = window.URL.createObjectURL(data);
+
+    return textFile;
   }
 
+  async function getLdcData() {
+    var ldcText = "";
+    await Ldc.createOrgsAndProjectsData((text) => {
+      ldcText = ldcText.concat(text);
+    });
+
+    let link = document.getElementById("ldcDownloadlink");
+    link.href = saveLdcFile(ldcText);
+    link.style.display = "block";
+  }
 </script>
 
 <div class="flex justify-between">
-  <div class="">
-      <button type="button" on:click={getData} class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-xl font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800">
-        <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-          Get Project Data
-        </span>
-      </button>
-  </div>
+    <button
+      type="button"
+      on:click={getLdcData}
+      class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-xl font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
+    >
+      <span
+        class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0"
+      >
+        Retrieve Link Data (OpenAIRE)
+      </span>
+    </button>
+    <a download="ldc.txt" id="ldcDownloadlink" style="display: none">Download</a
+    >
 </div>
-
-<div class="mt-4">
-  <textarea bind:value={modifiedContent}
-    id="message" rows="4" class="block p-2.5 min-h-96 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Write your text here..."></textarea>
-</div>
-

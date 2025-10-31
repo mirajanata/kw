@@ -17,27 +17,30 @@ export let kwx = {
     summaryOutputFunction: null
   },
 
-  
+
   async getKeywordList(content, options) {
-    options = {...this.options, ...options};
+    options = { ...this.options, ...options };
     let {
       maxN,
       keywords,
-      atx, 
-      country, 
+      atx,
+      country,
       euroscivoc,
       detailedOutput,
       detailedOutputFunction,
       summaryOutputFunction
     } = options;
 
+    if (!content)
+      content = "";
+
     const start = performance.now();
     const lines = content.split('\n');
-    let counter = 0,  kwCount = 0;
+    let counter = 0, kwCount = 0;
     this.progress = 0;
 
     for (const kw of keywords) {
-        kw.kwJoined = kw.newLabelArr.join('');
+      kw.kwJoined = kw.newLabelArr.join('');
     }
     const doSummary = (summaryOutputFunction || !detailedOutput);
     const summary = new Set();
@@ -51,7 +54,7 @@ export let kwx = {
       }
       const entryLower = line.toLowerCase();
       this.progress = Math.floor(counter / lines.length * 100);
-      
+
       const words = this.extractKeywords(entryLower, options, false);
       const searchedWords = this.generateSearchArray(words, maxN);
       foundKeywords.clear();
@@ -67,14 +70,14 @@ export let kwx = {
             Math.abs(word.length - kw.label.length) < 4 &&
             distance(kwJoined, word) <= distLimit
           ) {
-            let kwl=' '+kw.label+' ';
-            if (foundKeywords.entries().find(a=> (' '+a[1].label+' ').indexOf(kwl)!=-1)==undefined) {
+            let kwl = ' ' + kw.label + ' ';
+            if (foundKeywords.entries().find(a => (' ' + a[1].label + ' ').indexOf(kwl) != -1) == undefined) {
               foundKeywords.add(kw);
-              break; 
+              break;
             }
           }
         }
-      } 
+      }
 
       // --- Add contextual keywords ---
       const kwURIs = foundKeywords.entries().map(a => a[1].uri).toArray();
@@ -110,12 +113,12 @@ export let kwx = {
         let output = {
           row: counter,
           line: lineItem,
-          keywords: foundKeywords.size>0 ? Array.from(foundKeywords): []
+          keywords: foundKeywords.size > 0 ? Array.from(foundKeywords) : []
         };
         result.push(output);
-        if (detailedOutputFunction) 
+        if (detailedOutputFunction)
           detailedOutputFunction(output);
-      } 
+      }
       if (doSummary) {
         foundKeywords.forEach(summary.add, summary);
       }
@@ -123,24 +126,24 @@ export let kwx = {
     }
 
     let summaryOutput = doSummary ?
-    {
-      summary: Array.from(summary),
-      time:((performance.now() - start)/1000),
-      kwCount: kwCount
-    }: null;
+      {
+        summary: Array.from(summary),
+        time: ((performance.now() - start) / 1000),
+        kwCount: kwCount
+      } : null;
 
     if (summaryOutputFunction)
       summaryOutputFunction(summaryOutput);
 
     return detailedOutput ? {
       detailedOutput: result,
-      time:((performance.now() - start)/1000),
+      time: ((performance.now() - start) / 1000),
       kwCount: kwCount
-    }:
-    summaryOutput;
+    } :
+      summaryOutput;
   },
 
-// --- Utility Methods ---
+  // --- Utility Methods ---
 
   extractKeywords(lowerText, options, thesaurus = false) {
     // normalize

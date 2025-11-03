@@ -1,7 +1,7 @@
 <script>
   import { kwx } from "../kwx/kwx.js";
   import { Ldc } from "../ldc/Ldc.js";
-  import { OpenAIRE } from "../ldc/OpenAIRE.js";
+  import { Ldc_OpenAIRE } from "../ldc/Ldc_OpenAIRE.js";
 
   let textFile = null;
   let consoleOutput = "";
@@ -32,14 +32,19 @@
 
   async function getLdcData() {
     var ldcText = "";
+    let link = document.getElementById("ldcDownloadlink");
+    let button = document.getElementById("ldcCreate");
+    link.style.display = "none";
     consoleData = "";
     Ldc.progress = 0;
-    Ldc.consoleOutput("Starting LinkData import...\n");
+    button.disabled = true;
+    Ldc.consoleOutput("Starting LinkData Import...\n");
     await Ldc.createOrgsAndProjectsData((text) => {
       ldcText = ldcText.concat(text);
     });
-
-    let link = document.getElementById("ldcDownloadlink");
+    button.disabled = false;
+    Ldc.consoleOutput("Finished LinkData Import.\n");
+    Ldc.progress = 0;
     link.href = saveLdcFile(ldcText);
     link.style.display = "block";
   }
@@ -48,6 +53,7 @@
 <div class="flex justify-left">
   <button
     type="button"
+    id="ldcCreate"
     on:click={getLdcData}
     class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-xl font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
   >
@@ -68,7 +74,7 @@
       >{progress}</span
     >
   </div>
-  <a download="ldc.txt" id="ldcDownloadlink" style="display: none">Download</a>
+  <a download="ldc.txt" id="ldcDownloadlink" style="display: none">Download RDF data</a>
 </div>
 <div
   style="max-height: 200px;overflow:auto;"

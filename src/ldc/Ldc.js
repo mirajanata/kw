@@ -2,31 +2,48 @@ import { allKeywords, kwFormat, atx, country, euroscivoc, ignoreKw } from '../li
 import { kwx } from '../kwx/kwx.js'
 
 /*
-Ldc sources (i.e. OpenAire.js and others) must keep following object structures:
-1. organization
-let org = {
-    source: "OpenAIRE",
-    id: org.id,
-    country: organization.country.label,
-    name: organization.legalname,
-    shortName: organization.legalshortname,
-    websiteurl: organization.websiteurl,
-    projects: [...project],
-    relations: [...organization]
+
+Ldc object provides Extraction of organizations and project data, and Transformation into RDF text.
+To support various data consumers caller should provide callback method which is repeatedly called with the generated text:
+
+function LdcConsumerSample() {    
+    let ldcText = "";
+    Ldc.consoleOutput("Starting LinkData import...\n");
+    await Ldc.createOrgsAndProjectsData((text) => {
+      ldcText = ldcText.concat(text);
+    });
+    // process ldcText...
 }
 
-let project = {
-    acronym: project.acronym,
-    code: project.code,
-    projectTitle: project.title,
-    startDate: project.startDate,
-    endDate: project.endDate,
-    id: dri.objIdentifier;
-    description: "...";
-    totalCost: = "number";
-    currency: project.currency;
-    projectTitle: project.projectTitle;    
-}
+Ldc can use one or more data sources (i.e. Ldc_OpenAIRE.js and others) must be objects keeping following pettern:
+    1. provide organization result structure
+        let org = {
+            source: "OpenAIRE",
+            id: org.id,
+            country: organization.country.label,
+            name: organization.legalname,
+            shortName: organization.legalshortname,
+            websiteurl: organization.websiteurl,
+            projects: [...project],
+            relations: [...organization]
+        }
+    2. provide project result structure 
+        let project = {
+            acronym: project.acronym,
+            code: project.code,
+            projectTitle: project.title,
+            startDate: project.startDate,
+            endDate: project.endDate,
+            id: dri.objIdentifier;
+            description: "...";
+            totalCost: = "number";
+            currency: project.currency;
+            projectTitle: project.projectTitle;    
+        }
+    3. provide method
+        async function processOrgsAndProjectsList(async orgFunction),  calling await orgFunction(organization) for each organization found (structures in 1. and 2.)
+
+    4. register self using Ldc.addSource(source) method
 */
 
 export let Ldc = {
@@ -71,9 +88,6 @@ export let Ldc = {
 `;
                 writerFunc(item);
                 item = '';
-                if (p.acronym == "ECCSEL") {
-                    item = "";
-                }
                 if (p.relations) for (let rel of p.relations) {
                     item += `
         <https://org.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .`;

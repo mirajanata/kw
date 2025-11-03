@@ -1,6 +1,6 @@
-import { Ldc } from '../ldc/Ldc.js';
+import { Ldc } from './Ldc.js';
 
-export let OpenAIRE = {
+export let Ldc_OpenAIRE = {
     name: "OpenAIRE",
     config: {
         org: {
@@ -220,4 +220,4 @@ export let OpenAIRE = {
     taskCount: 0
 };
 
-Ldc.addSource(OpenAIRE);
+Ldc.addSource(Ldc_OpenAIRE);

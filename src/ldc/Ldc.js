@@ -76,7 +76,7 @@ export let Ldc = {
 
             for (let p of org.projects) {
                 Ldc.consoleOutput(p.acronym);
-                item = `
+                item = `    <${org.identifier}> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/${p.identifier}> .
     <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#endDate> "${p.endDate}" .
     <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#hasTotalCost> "${p.totalCost}" .
     <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#shortForm> "${p.acronym}" .
@@ -89,16 +89,16 @@ export let Ldc = {
                 writerFunc(item);
                 item = '';
                 if (p.relations) for (let rel of p.relations) {
-                    item += `
-        <https://org.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .`;
+                    item += `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .
+`;
                 }
                 writerFunc(item);
                 item = '';
                 let kwList = await this.getKeywords(p.description);
 
                 for (let kw of kwList.summary) {
-                    item += `
-        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .`
+                    item += `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
+`
                 }
                 writerFunc(item);
             }

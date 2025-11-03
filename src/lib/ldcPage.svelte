@@ -43,8 +43,8 @@
       ldcText = ldcText.concat(text);
     });
     button.disabled = false;
-    Ldc.consoleOutput("Finished LinkData Import.\n");
     Ldc.progress = 0;
+    Ldc.consoleOutput("Finished LinkData Import.\n");
     link.href = saveLdcFile(ldcText);
     link.style.display = "block";
   }
@@ -54,28 +54,32 @@
   <button
     type="button"
     id="ldcCreate"
-    on:click={getLdcData}
+    on:click={getLdcData} style="width:290px;"
     class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-xl font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
   >
     <span
       class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0"
     >
-      Retrieve Link Data (OpenAIRE)
+      Retrieve Link Data
     </span>
   </button>
-  <div class="w-full bg-gray-200 rounded-full h-0.5 dark:bg-gray-700 mt-1">
+  <div class="w-full bg-gray-200 rounded-full h-0.5 dark:bg-gray-700 mt-2">
     <div
       class="bg-gradient-to-r to-emerald-600 from-sky-400 h-0.5 rounded-full"
       style="width: {progress}"
     ></div>
   </div>
-  <div class="flex justify-end mb-1">
+  <div class="flex justify-end mb-1 ml-1">
     <span class="text-sm font-medium text-gray-500 dark:text-gray-400"
       >{progress}</span
     >
   </div>
-  <a download="ldc.txt" id="ldcDownloadlink" style="display: none">Download RDF data</a>
 </div>
+
+<div class="flex justify-left mb-1 ml-1">
+  <a download="ldc.txt" id="ldcDownloadlink" style="display: none;">Download RDF data</a>
+</div>
+
 <div
   style="max-height: 200px;overflow:auto;"
   contenteditable="true"

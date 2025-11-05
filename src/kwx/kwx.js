@@ -17,6 +17,7 @@ export let kwx = {
     summaryOutputFunction: null
   },
 
+  lastKeywords: null,
 
   async getKeywordList(content, options) {
     options = { ...this.options, ...options };
@@ -39,9 +40,12 @@ export let kwx = {
     let counter = 0, kwCount = 0;
     this.progress = 0;
 
-    for (const kw of keywords) {
-      kw.kwJoined = kw.newLabelArr.join('');
+    if (kwx.lastKeywords != keywords) {
+      for (const kw of keywords) {
+        kw.kwJoined = kw.newLabelArr.join('');
+      }
     }
+    kwx.lastKeywords = keywords;
     const doSummary = (summaryOutputFunction || !detailedOutput);
     const summary = new Set();
     const result = [];

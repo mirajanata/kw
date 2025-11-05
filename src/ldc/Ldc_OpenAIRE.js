@@ -1,11 +1,61 @@
 import { Ldc } from './Ldc.js';
 
+/*
+Ldc_OpenAIRE object is a specific data source for the main Ldc (Link Data Converter) framework. 
+Its primary role is to extract organization and project data from the OpenAIRE API and transform it into the structured format required by the Ldc for subsequent RDF generation.
+
+Core Components and Configuration
+
+    Registration: The code concludes by registering itself with the main framework: Ldc.addSource(Ldc_OpenAIRE);.
+
+    Source Name: It identifies itself as "OpenAIRE".
+
+    Configuration (config): Defines the API endpoints and the list of organizations to process:
+
+        org.query: The OpenAIRE API endpoint to fetch individual organization details by ID.
+
+        org.augmentProjectsQuery: An API query to retrieve projects associated with an organization's acronym.
+
+        org.list: A hardcoded list of specific organizations (with their OpenAIRE ID and name/acronym) that the script should process. This list includes many European geological surveys and research institutions (e.g., BGR, BRGM, GTK, NGU).
+
+        project.query: The OpenAIRE API endpoint to fetch detailed information for a single project by its acronym.
+
+Data Processing Flow (processOrgsAndProjectsList)
+
+This is the required method for Ldc sources, responsible for fetching data and calling the orgFunction callback:
+
+    Iterates Over Organizations: It loops through the hardcoded list in this.config.org.list.
+
+    Fetch Organization Data: For each item, it calls the org.query API to retrieve the organization's full data (name, country, website, etc.). It skips any organization that does not have a websiteurl.
+
+    Extract Initial Project Links: It parses the organization's response and extracts basic information (acronym, title, dates) for its related projects using links with the "projectOrganization" relation type.
+
+    Project Deduplication: It uses an allProjects array to track projects already encountered and marks a project with project.exists = true if it's already been added, preventing duplicate RDF creation in the main Ldc process.
+
+    Augment Project Data: It attempts to retrieve richer project metadata (description, total cost, currency, related organizations) by first calling augmentOrgProjectsData (using the organization's short name to query a list of projects) and, if that fails, calling augmentProjectData for each individual project.
+
+    Normalize and Output: It calls the main Ldc.normalizeProj method to generate a project URI and then invokes the provided orgFunction(o) callback, passing the fully structured organization object to the main Ldc framework for RDF generation.
+
+    Progress Tracking and Error Handling: It updates Ldc.progress based on the processed list length and includes basic try...catch blocks for API call errors.
+
+Data Augmentation Methods
+
+    augmentOrgProjectsData(org): Fetches a list of projects associated with the organization's acronym. It then iterates through the organization's projects, matches them to the results, and updates project details (ID, description, cost, relations) using the OpenAIRE response's metadata. It also collects related organization objects into org.relations.
+
+    augmentProjectData(p): Used as a fallback. It queries the OpenAIRE API for a single project by its acronym to retrieve its full details and associated relations.
+
+This module effectively integrates the OpenAIRE repository as a specific data source into a broader Linked Data generation pipeline.
+
+Is there a specific organization from the hardcoded list you would like more detail on?
+
+*/
+
 export let Ldc_OpenAIRE = {
     name: "OpenAIRE",
     config: {
         org: {
             query: "https://services.openaire.eu/search/v2/api/organizations/{id}?format=json",
-            augmentProjectsQuery: "http://api.openaire.eu/search/projects?format=json&sortBy=projectstartdate,descending&participantAcronyms={acronym}&size=10000",
+            augmentProjectsQuery: "http://api.openaire.eu/search/projects?format=json&participantAcronyms={acronym}&size=10000",
             list: [
                 { id: "pending_org_::92b9ac16907f563eeb6fac6ad667f46c", name: "ACRI-ST" },
                 { id: "corda_____he::354d88daaa61069d72f4ed74a9809611", name: "IPMA" },
@@ -76,7 +126,7 @@ export let Ldc_OpenAIRE = {
             ]
         },
         project: {
-            query: "http://api.openaire.eu/search/projects?size=1&format=json&sortBy=projectstartdate,descending&acronym={acronym}",
+            query: "http://api.openaire.eu/search/projects?size=1&format=json&acronym={acronym}",
         }
     },
 
@@ -84,6 +134,7 @@ export let Ldc_OpenAIRE = {
         this.taskCount = 0;
         let tasks = [];
         let index = Ldc.progress = 0;
+        let allProjects = [];
         for (let org of this.config.org.list) {
             this.taskCount++;
             // read org data
@@ -102,9 +153,9 @@ export let Ldc_OpenAIRE = {
                     projects: [],
                     relations: []
                 };
-                Ldc.consoleOutput("-------- org: " + org.name + " - " + org.id + " ----------------");
+                Ldc.consoleOutput("-------- Processing organization: " + org.name + " - " + org.id);
                 // read projects data
-                for (let p of r.links.filter((l) => l.header.relationType == "projectOrganization")) {
+                for (let p of r.links.filter((l) => l.header && l.header.relationType == "projectOrganization")) {
                     if (p.acronym) {
                         let project = {
                             acronym: p.acronym,
@@ -114,11 +165,20 @@ export let Ldc_OpenAIRE = {
                             endDate: p.endDate
                         }
                         o.projects.push(project);
+                        Ldc.normalizeProj(project);
+                        if (allProjects.includes(project.identifier)) {
+                            project.exists = true;
+                            Ldc.consoleOutput("project "+project.identifier+": already processed.")
+                        } else {
+                            allProjects.push(project.identifier);
+                            Ldc.consoleOutput("project "+project.identifier+": processing...")
+                            project.exists = false;
+                        }
                     }
                 }
                 // augment project data - either using org/projects query or using single project query calls
                 if (!await this.augmentOrgProjectsData(o)) {
-                    for (let p in o.projects) {
+                    for (let p in o.projects.filter(p=>!p.exists)) {
                         await this.augmentProjectData(p);
                     }
                 }
@@ -127,12 +187,14 @@ export let Ldc_OpenAIRE = {
                 // call output
                 await orgFunction(o);
                 o.projects = null;
-            }
+           }
             catch (error) {
+                console.trace();
                 Ldc.consoleOutput("ERROR reading organization data for " + org.name + " - " + org.id);
             }
             this.taskCount--;
         }
+        Ldc.progress = 100;
         this.taskCount = 0;
     },
 
@@ -140,12 +202,19 @@ export let Ldc_OpenAIRE = {
         let res = false;
         let r = await fetch(this.config.org.augmentProjectsQuery.replaceAll("{acronym}", org.shortName)).then(res => res.json());
         if (r.response.results) {
-            let results = r.response.results.result;
+            let results = r.response.results.result || r.response.results.record;
+            if (!results)
+                throw new Error("augmentOrgProjectsData: invalid response.");
+            if (!results.filter)
+                throw new Error("augmentOrgProjectsData: invalid response: "+results+".");
             for (let p of org.projects) {
-                let result = results.filter(m => m.metadata["oaf:entity"]["oaf:project"].acronym && m.metadata["oaf:entity"]["oaf:project"].acronym["$"] == p.acronym);
+                let result = results.filter(m => {
+                    let md = m.result[0].metadata["oaf:entity"]["oaf:project"];
+                    return md.acronym && md.acronym["$"] == p.acronym;
+                });
                 if (result && result.length == 1) {
                     res = true;
-                    result = result[0];
+                    result = result[0].result[0];
                     let pd = result.metadata["oaf:entity"]["oaf:project"];
                     p.id = result.header["dri:objIdentifier"]["$"];
                     p.description = pd.summary ? pd.summary["$"] : "";

@@ -38,13 +38,16 @@
     consoleData = "";
     Ldc.progress = 0;
     button.disabled = true;
+    const start = performance.now();
     Ldc.consoleOutput("Starting LinkData Import...\n");
     await Ldc.createOrgsAndProjectsData((text) => {
-      ldcText = ldcText.concat(text);
+      if (ldcText.indexOf(text)<0)
+        ldcText = ldcText.concat(text);
+      else
+        text = text;
     });
     button.disabled = false;
-    Ldc.progress = 0;
-    Ldc.consoleOutput("Finished LinkData Import.\n");
+    Ldc.consoleOutput("Finished LinkData Import ("+((performance.now() - start) / 1000)+"s).\n");
     link.href = saveLdcFile(ldcText);
     link.style.display = "block";
   }

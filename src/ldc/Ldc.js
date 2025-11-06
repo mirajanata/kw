@@ -117,7 +117,7 @@ export let Ldc = {
 `;
             writerFunc(item);
 
-            for (let p of org.projects.filter(p=>!p.exists)) {
+            for (let p of org.projects.filter(p => !p.exists)) {
                 item = `    <${org.identifier}> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/${p.identifier}> .
 `;
                 writerFunc(item);
@@ -167,16 +167,28 @@ export let Ldc = {
 
     normalizeOrg: function (org) {
         if (org.websiteurl) {
-            const url = new URL(org.websiteurl);
-            let a = (url.hostname.replaceAll(" ", "")).split(".");
-            let n = a.length - 1;
-            org.identifier = "https://org.europe-geology.eu/" + (a[n - 1] + "-" + a[n]).replaceAll(".", "-");
+            if (org.websiteurl.indexOf("http") < 0)
+                org.websiteurl = "http://" + org.websiteurl;
+            else if (org.websiteurl.indexOf("http//")==0)
+                org.websiteurl = "http://" + org.websiteurl.substring(6);
+            else if (org.websiteurl.indexOf("http::")==0)
+                org.websiteurl = "http://" + org.websiteurl.substring(6);
+            try {
+                const url = new URL(org.websiteurl);
+                let a = (url.hostname.replaceAll(" ", "")).split(".");
+                let n = a.length - 1;
+                org.identifier = "https://org.europe-geology.eu/" + (a[n - 1] + "-" + a[n]).replaceAll(".", "-");
+            }
+            catch (e) {
+                return false;
+            }
         } else {
             org.identifier = "https://org.europe-geology.eu/" + org.id;
         }
-        if (org.identifier=="https://org.europe-geology.eu/http:" || org.identifier=="https://org.europe-geology.eu/https:") {
-            throw new Error("invalid org.identifier "+org.identifier);
+        if (org.identifier == "https://org.europe-geology.eu/http:" || org.identifier == "https://org.europe-geology.eu/https:") {
+            return false;
         }
+        return true;
     },
 
     normalizeProj: function (p) {
@@ -193,7 +205,7 @@ export let Ldc = {
         }
     },
 
-    normalizeLiteral: function(s) {
+    normalizeLiteral: function (s) {
         if (!s)
             return s;
         return s.replaceAll("\n", " ").replaceAll("\r", "").replaceAll("\t", " ");
@@ -201,8 +213,6 @@ export let Ldc = {
 
     callOrgFunction: async function (org) {
         // here this would be different object!
-        Ldc.normalizeOrg(org);
-
         for (let p of org.projects) {
             Ldc.normalizeProj(p);
         }

@@ -141,8 +141,12 @@ export let Ldc_OpenAIRE = {
             try {
                 let r = await fetch(this.config.org.query.replaceAll("{id}", org.id)).then(res => res.json());
 
-                if (!r.organization.websiteurl) // filter out orgs with empty wwebsite
+                if (!(r.organization && r.organization.websiteurl)) // filter out orgs with empty wwebsite
+                {
+                    if (r.message)
+                        Ldc.consoleOutput("ERROR: organization not found, " + r.message);
                     continue;
+                }
                 let o = {
                     source: "OpenAIRE",
                     id: org.id,
@@ -153,6 +157,11 @@ export let Ldc_OpenAIRE = {
                     projects: [],
                     relations: []
                 };
+                if (!Ldc.normalizeOrg(o)) {
+                    Ldc.consoleOutput("-------- Skipping organization: " + org.name + " - " + org.id + " (invalid website)");
+                    continue;
+                }
+
                 Ldc.consoleOutput("-------- Processing organization: " + org.name + " - " + org.id);
                 // read projects data
                 for (let p of r.links.filter((l) => l.header && l.header.relationType == "projectOrganization")) {
@@ -168,26 +177,26 @@ export let Ldc_OpenAIRE = {
                         Ldc.normalizeProj(project);
                         if (allProjects.includes(project.identifier)) {
                             project.exists = true;
-                            Ldc.consoleOutput("project "+project.identifier+": already processed.")
+                            Ldc.consoleOutput("project " + project.identifier + ": already processed.")
                         } else {
                             allProjects.push(project.identifier);
-                            Ldc.consoleOutput("project "+project.identifier+": processing...")
+                            Ldc.consoleOutput("project " + project.identifier + ": processing...")
                             project.exists = false;
                         }
                     }
                 }
                 // augment project data - either using org/projects query or using single project query calls
                 if (!await this.augmentOrgProjectsData(o)) {
-                    for (let p in o.projects.filter(p=>!p.exists)) {
+                    for (let p in o.projects.filter(p => !p.exists)) {
                         await this.augmentProjectData(p);
                     }
                 }
                 index++;
-                Ldc.progress = Math.floor(100*index/this.config.org.list.length);
+                Ldc.progress = Math.floor(100 * index / this.config.org.list.length);
                 // call output
                 await orgFunction(o);
                 o.projects = null;
-           }
+            }
             catch (error) {
                 console.trace();
                 Ldc.consoleOutput("ERROR reading organization data for " + org.name + " - " + org.id);
@@ -205,17 +214,73 @@ export let Ldc_OpenAIRE = {
             let results = r.response.results.result || r.response.results.record;
             if (!results)
                 throw new Error("augmentOrgProjectsData: invalid response.");
-            if (!results.filter)
-                throw new Error("augmentOrgProjectsData: invalid response: "+results+".");
+            if (!results.filter) {
+                results = results.result;
+                if (!results.filter) {
+                    throw new Error("augmentOrgProjectsData: invalid response: " + results + ".");
+                }
+            }
             for (let p of org.projects) {
                 let result = results.filter(m => {
-                    let md = m.result[0].metadata["oaf:entity"]["oaf:project"];
+                    let md = m.metadata || m.result[0].metadata;
+                    md = md["oaf:entity"]["oaf:project"];
                     return md.acronym && md.acronym["$"] == p.acronym;
                 });
                 if (result && result.length == 1) {
                     res = true;
-                    result = result[0].result[0];
-                    let pd = result.metadata["oaf:entity"]["oaf:project"];
+                    result = result[0];
+                    let md = result.metadata || result.result[0].metadata;
+                    let pd = md["oaf:entity"]["oaf:project"];
+                    let hd = result.header || result.result[0].header;
+                    p.id = hd["dri:objIdentifier"]["$"];
+                    p.description = pd.summary ? pd.summary["$"] : "";
+                    p.totalCost = pd.totalcost ? pd.totalcost["$"] : null;
+                    p.currency = pd.currency;
+                    p.projectTitle = pd.title ? pd.title["$"] : p.projectTitle;
+
+                    p.relations = [];
+                    for (let rel in pd.rels) {
+                        let item = pd.rels[rel];
+                        for (let r of ((item.constructor.name == "Array") ? item : [item])) {
+                            let o = {
+                                source: "OpenAIRE",
+                                id: r.id,
+                                country: r.country ? r.country["@classname"] : "",
+                                name: r.legalname ? r.legalname["$"] : "",
+                                shortName: r.legalshortname ? r.legalshortname["$"] : "",
+                                websiteurl: r.websiteurl ? r.websiteurl["$"] : ""
+                            };
+                            if (!o.websiteurl) // filter out orgs without website
+                                continue;
+                            if (!Ldc.normalizeOrg(o)) {
+                                Ldc.consoleOutput("-------- Invalid related organization website: " + o.websiteurl);
+                                continue;
+                            }
+                            p.relations.push(o);
+                            let ro = org.relations.find(m => m.name == o.name);
+                            if (ro == null || ro.length < 1) {
+                                org.relations.push(o);
+                            }
+                        }
+                    }
+                } else {
+                    await this.augmentProjectData(p);
+                }
+            }
+        }
+
+        return res;
+    },
+
+    augmentProjectData: async function (p) {
+        await fetch(this.config.project.query.replaceAll("{acronym}", p.acronym)).then(res => res.json()).then((r) => {
+            let results = r.response.results.result || r.response.results.record;
+            if (results) {
+                if (results.result)
+                    results = results.result;
+                for (let result of results) {
+                    let md = result.metadata || result.result[0].metadata;
+                    let pd = md["oaf:entity"]["oaf:project"];
                     p.id = result.header["dri:objIdentifier"]["$"];
                     p.description = pd.summary ? pd.summary["$"] : "";
                     p.totalCost = pd.totalcost ? pd.totalcost["$"] : null;
@@ -236,54 +301,16 @@ export let Ldc_OpenAIRE = {
                             };
                             if (!o.websiteurl) // filter out orgs without website
                                 continue;
-                            Ldc.normalizeOrg(o);
-                            p.relations.push(o);
-                            let ro = org.relations.find(m => m.name == o.name);
-                            if (ro == null || ro.length < 1) {
-                                org.relations.push(o);
+                            if (!Ldc.normalizeOrg(o)) {
+                                Ldc.consoleOutput("-------- Invalid related organization website: " + o.websiteurl);
+                                continue;
                             }
+                            p.relations.push(o);
                         }
                     }
-                } else {
-                    await this.augmentProjectData(p);
+
                 }
             }
-        }
-
-        return res;
-    },
-
-    augmentProjectData: async function (p) {
-        await fetch(this.config.project.query.replaceAll("{acronym}", p.acronym)).then(res => res.json()).then((r) => {
-            if (r.response.results)
-                for (let result of r.response.results.result) {
-                    let pd = result.metadata["oaf:entity"]["oaf:project"];
-                    p.id = result.header["dri:objIdentifier"]["$"];
-                    p.description = pd.summary ? pd.summary["$"] : "";
-                    p.totalCost = pd.totalcost ? pd.totalcost["$"] : null;
-                    p.currency = pd.currency;
-                    p.projectTitle = pd.title;
-
-                    p.relations = [];
-                    for (let rel in pd.rels) {
-                        let item = pd.rels[rel];
-                        for (let r of ((item.constructor.name == "Array") ? item : [item])) {
-                            let o = {
-                                source: "OpenAIRE",
-                                id: r.id,
-                                country: r.country ? r.country["@classname"] : "",
-                                name: r.legalname ? r.legalname["$"] : "",
-                                shortName: r.legalshortname ? r.legalshortname["$"] : "",
-                                websiteurl: r.websiteurl ? r.websiteurl["$"] : ""
-                            };
-                            if (!o.websiteurl) // filter out orgs without website
-                                continue;
-                            Ldc.normalizeOrg(o);
-                            p.relations.push(o);
-                        }
-                    }
-
-                }
         });
     },
     taskCount: 0

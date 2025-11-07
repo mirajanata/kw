@@ -176,8 +176,9 @@ export let Ldc = {
             try {
                 const url = new URL(org.websiteurl);
                 let a = (url.hostname.replaceAll(" ", "")).split(".");
-                let n = a.length - 1;
-                org.identifier = "https://org.europe-geology.eu/" + (a[n - 1] + "-" + a[n]).replaceAll(".", "-");
+                org.identifier = "https://org.europe-geology.eu/" + (['www','www2','en'].includes(a[0])?a.slice(1):a).join('-');
+                //let n = a.length - 1;
+                //org.identifier = "https://org.europe-geology.eu/" + (a[n - 1] + "-" + a[n]).replaceAll(".", "-");
             }
             catch (e) {
                 return false;
@@ -208,7 +209,7 @@ export let Ldc = {
     normalizeLiteral: function (s) {
         if (!s)
             return s;
-        return s.replaceAll("\n", " ").replaceAll("\r", "").replaceAll("\t", " ");
+        return s.replaceAll("\n", " ").replaceAll("\r", "").replaceAll("\t", " ").replace(/"/,'');
     },
 
     callOrgFunction: async function (org) {

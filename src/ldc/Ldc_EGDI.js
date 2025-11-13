@@ -1,14 +1,40 @@
+/*
+Ldc_EGDI a configuration Ldc famework source object for an Extract, Transform, Load (ETL) process designed to pull project and organization data from the European Geological Data Infrastructure (EGDI) Catalogue Service for the Web (CSW) .
+
+Key Components & Workflow
+
+    Configuration (config):
+
+        Defines the base OGC CSW GetRecords query to the EGDI service (https://egdi.geology.cz/csw/).
+
+        The query specifically requests records with Subject='Geology' or Subject='Hydrogeology'.
+
+        It uses pagination via a {startPosition} placeholder for iterative fetching.
+
+    Data Harvesting (processOrgsAndProjectsList):
+
+        This is the main function that iteratively queries the EGDI CSW until all records (totalRecords) are retrieved.
+
+        Extraction: For each record (Project), it extracts the title, ID, abstract, and contact information.
+
+        Transformation/Aggregation: It extracts all contacts from a record and uses a normalized name (nname) to ensure only unique organizations are stored in the uniqueOrganizations map.
+
+        Each unique organization object keeps a list (projects) of the projects it is associated with.
+
+    Organization Processing (processUniqueOrganizations):
+
+        After all projects are processed, this function iterates through the collected unique organizations and passes them to a provided callback function (orgFunction), likely for further processing or writing.
+
+    RDF Output (writeRdfText):
+
+        This function handles the writing of data into RDF format (N-Triples).
+
+        It writes both the Organization details (using http://data.europa.eu/s66#Organization) and the Project details (using http://data.europa.eu/s66#Project).
+
+*/
+
 import { Ldc } from './Ldc.js';
 
-/*
- * Ldc_EGDI: Adapted ETL module for the EGDI (Catalog Service for the Web) endpoint.
- *
- * CRITICAL CHANGE: This module now fetches a single XML response for all records,
- * and the entire data extraction process is changed from JSON object traversal 
- * to XML parsing (using DOMParser/xpath or similar methods).
- * * NOTE: This adaptation assumes the Ldc environment supports a standard DOMParser 
- * or has a utility method for XML parsing to navigate the response structure.
- */
 export let Ldc_EGDI = {
     name: "EGDI_CSW_OrgProj",
     config: {

@@ -86,6 +86,9 @@ Ldc can use one or more data sources (i.e. Ldc_OpenAIRE.js and others) must be o
     3. provide method
         async function processOrgsAndProjectsList(async orgFunction),  calling await orgFunction(organization) for each organization found (structures in 1. and 2.)
 
+    4. provide method
+        async function writeRdfText(org, writerFunction), returning RdfText for given organization
+
     4. register self using Ldc.addSource(source) method
 */
 
@@ -95,6 +98,8 @@ export let Ldc = {
     orgFunction: null,
     progress: 0,
     progressSource: "",
+    writerFunction: null,
+    fileName: null,
     consoleOutput: function (text) {
         console.log(text);
     },
@@ -103,63 +108,22 @@ export let Ldc = {
         this.sources.push(s);
     },
 
-    createOrgsAndProjectsData: async function (writerFunc) {
+    createOrgsAndProjectsData: async function (writerFunction, sourceIndex) {
         Ldc.progress = 0;
-        let orgs = await this.processOrgsAndProjectsList(async (org) => {
-            let item =
-                `
-<${org.identifier}> <http://data.europa.eu/s66#Country> "${org.country}" .
-<${org.identifier}> <http://data.europa.eu/s66#shortForm> "${Ldc.normalizeLiteral(org.shortName)}" .
-<${org.identifier}> <http://purl.org/dc/terms/identifier> "${org.id}" .
-<${org.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Organization> .
-<${org.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${Ldc.normalizeLiteral(org.name)}" .
-<${org.identifier}> <http://xmlns.com/foaf/0.1/page> <${org.websiteurl}> .
-`;
-            writerFunc(item);
-
-            for (let p of org.projects.filter(p => !p.exists)) {
-                item = `    <${org.identifier}> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/${p.identifier}> .
-`;
-                writerFunc(item);
-                item = `    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#endDate> "${p.endDate}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#hasTotalCost> "${p.totalCost}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#shortForm> "${p.acronym}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#startDate> "${p.startDate}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/description> "${Ldc.normalizeLiteral(p.description)}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/identifier> "${p.id}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Project> .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${Ldc.normalizeLiteral(p.projectTitle)}" .
-`;
-                writerFunc(item);
-
-                if (p.relations) for (let rel of p.relations) {
-                    item = `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .
-`;
-                    writerFunc(item);
-                }
-                let kwList = await this.getKeywords(p.description);
-
-                for (let kw of kwList.summary) {
-                    item = `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
-`;
-                    writerFunc(item);
-                }
-            }
-
-        });
+        Ldc.writerFunction = writerFunction;
+        let orgs = await this.processOrgsAndProjectsList(sourceIndex);
 
     },
 
-    processOrgsAndProjectsList: async function (orgFunction) {
+    processOrgsAndProjectsList: async function (sourceIndex) {
         let result = [];
         this.taskCount = 0;
-        this.orgFunction = orgFunction;
-        for (let source of this.sources) {
-            this.taskCount++;
-            Ldc.progressSource = source.name;
-            await source.processOrgsAndProjectsList(this.callOrgFunction);
-            this.taskCount--;
-        }
+        let source = this.sources[sourceIndex];
+        this.taskCount++;
+        Ldc.progressSource = source.name;
+        this.orgFunction = source.writeRdfText;
+        await source.processOrgsAndProjectsList(this.callOrgFunction);
+        this.taskCount--;
         this.taskCount = 0;
         this.orgFunction = null;
         return result;
@@ -169,24 +133,26 @@ export let Ldc = {
         if (org.websiteurl) {
             if (org.websiteurl.indexOf("http") < 0)
                 org.websiteurl = "http://" + org.websiteurl;
-            else if (org.websiteurl.indexOf("http//")==0)
+            else if (org.websiteurl.indexOf("http//") == 0)
                 org.websiteurl = "http://" + org.websiteurl.substring(6);
-            else if (org.websiteurl.indexOf("http::")==0)
+            else if (org.websiteurl.indexOf("http::") == 0)
                 org.websiteurl = "http://" + org.websiteurl.substring(6);
             try {
                 const url = new URL(org.websiteurl);
                 let a = (url.hostname.replaceAll(" ", "")).split(".");
-                org.identifier = "https://org.europe-geology.eu/" + (['www','www2','en'].includes(a[0])?a.slice(1):a).join('-');
+                org.identifier = "https://org.europe-geology.eu/" + (['www', 'www2', 'en'].includes(a[0]) ? a.slice(1) : a).join('-');
                 //let n = a.length - 1;
                 //org.identifier = "https://org.europe-geology.eu/" + (a[n - 1] + "-" + a[n]).replaceAll(".", "-");
             }
             catch (e) {
                 return false;
             }
+        } else if (org.email && org.email.indexOf("@") > 0) {
+            org.identifier = "https://org.europe-geology.eu/" + org.email.split("@")[1].replaceAll(".", "-");
         } else {
-            org.identifier = "https://org.europe-geology.eu/" + org.id;
+            org.identifier = "https://org.europe-geology.eu/" + org.id.replaceAll(".", "-").replaceAll("@", "-");
         }
-        if (org.identifier == "https://org.europe-geology.eu/http:" || org.identifier == "https://org.europe-geology.eu/https:") {
+        if (org.identifier == "https://org.europe-geology.eu/http:" || org.identifier == "https://org.europe-geology.eu/https:" || org.identifier == "https://org.europe-geology.eu/not available") {
             return false;
         }
         return true;
@@ -209,7 +175,7 @@ export let Ldc = {
     normalizeLiteral: function (s) {
         if (!s)
             return s;
-        return s.replaceAll("\n", " ").replaceAll("\r", "").replaceAll("\t", " ").replace(/"/,'');
+        return s.replaceAll("\n", " ").replaceAll("\r", "").replaceAll("\t", " ").replace(/"/, '');
     },
 
     callOrgFunction: async function (org) {
@@ -217,7 +183,7 @@ export let Ldc = {
         for (let p of org.projects) {
             Ldc.normalizeProj(p);
         }
-        await Ldc.orgFunction(org);
+        await Ldc.orgFunction(org, Ldc.writerFunction);
     },
 
     filteredKeywords: null,

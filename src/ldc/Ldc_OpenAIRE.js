@@ -44,6 +44,9 @@ Data Augmentation Methods
 
     augmentProjectData(p): Used as a fallback. It queries the OpenAIRE API for a single project by its acronym to retrieve its full details and associated relations.
 
+Rdf Text generation
+    writeRdfText method converts org data into rdf triplet set
+
 This module effectively integrates the OpenAIRE repository as a specific data source into a broader Linked Data generation pipeline.
 
 Is there a specific organization from the hardcoded list you would like more detail on?
@@ -135,6 +138,7 @@ export let Ldc_OpenAIRE = {
         let tasks = [];
         let index = Ldc.progress = 0;
         let allProjects = [];
+        Ldc.fileName = "Ldc_OpenAIRE.txt";
         for (let org of this.config.org.list) {
             this.taskCount++;
             // read org data
@@ -313,6 +317,50 @@ export let Ldc_OpenAIRE = {
             }
         });
     },
+
+    writeRdfText: async function (org, writerFunc) {
+        let item =
+            `
+<${org.identifier}> <http://data.europa.eu/s66#Country> "${org.country}" .
+<${org.identifier}> <http://data.europa.eu/s66#shortForm> "${Ldc.normalizeLiteral(org.shortName)}" .
+<${org.identifier}> <http://purl.org/dc/terms/identifier> "${org.id}" .
+<${org.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Organization> .
+<${org.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${Ldc.normalizeLiteral(org.name)}" .
+<${org.identifier}> <http://xmlns.com/foaf/0.1/page> <${org.websiteurl}> .
+`;
+        writerFunc(item);
+
+        for (let p of org.projects.filter(p => !p.exists)) {
+            item = `    <${org.identifier}> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/${p.identifier}> .
+`;
+            writerFunc(item);
+            item = `    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#endDate> "${p.endDate}" .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#hasTotalCost> "${p.totalCost}" .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#shortForm> "${p.acronym}" .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://data.europa.eu/s66#startDate> "${p.startDate}" .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/description> "${Ldc.normalizeLiteral(p.description)}" .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/identifier> "${p.id}" .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Project> .
+    <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${Ldc.normalizeLiteral(p.projectTitle)}" .
+`;
+            writerFunc(item);
+
+            if (p.relations) for (let rel of p.relations) {
+                item = `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .
+`;
+                writerFunc(item);
+            }
+            let kwList = await this.getKeywords(p.description);
+
+            for (let kw of kwList.summary) {
+                item = `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
+`;
+                writerFunc(item);
+            }
+        }
+
+    },
+
     taskCount: 0
 };
 

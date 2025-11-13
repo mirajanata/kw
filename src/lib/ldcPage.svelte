@@ -71,7 +71,7 @@
       class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-xl font-medium"
     >
       <option value="0">EGDI</option>
-      <option value="1">Open AIRE</option>
+      <option value="1">OpenAIRE</option>
     </select>
     <button
       type="button"

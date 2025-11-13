@@ -36,13 +36,11 @@ Key Components & Workflow
 import { Ldc } from './Ldc.js';
 
 export let Ldc_EGDI = {
-    name: "EGDI_CSW_OrgProj",
+    name: "EGDI",
     config: {
         query: "https://egdi.geology.cz/csw/?request=GetRecords&query=(subject%3D%27Geology%27+OR+Subject%3D%27Hydrogeology%27)&format=application/json&MaxRecords=10000&StartPosition={startPosition}&language=eng&ElemetnSetName=full"
     },
 
-    // A collection to hold unique organizations derived from contacts
-    // This mimics the OpenAIRE 'list' but is dynamically populated
     uniqueOrganizations: new Map(),
 
     taskCount: 0,
@@ -57,6 +55,9 @@ export let Ldc_EGDI = {
         let totalRecords = Infinity;
         let index = Ldc.progress = 0;
         Ldc.fileName = "Ldc_EGDI.txt";
+
+
+        this.uniqueOrganizations.clear();
 
         Ldc.consoleOutput("Starting ETL for EGDI CSW (Organization/Project Structure)...");
 
@@ -83,9 +84,6 @@ export let Ldc_EGDI = {
                     };
                     Ldc.normalizeProj(project); // Assuming Ldc.normalizeProj exists for URI cleaning
 
-                    // --- 2. EXTRACT RELATED ORGANIZATIONS (CONTACTS) ---
-                    // Contacts can be at the Dataset level (pointOfContact) and/or Metadata level (contact)
-
                     let allContacts = record.contacts || [];
 
                     for (let contact of allContacts) {
@@ -96,9 +94,9 @@ export let Ldc_EGDI = {
 
                             if (org && Ldc.normalizeOrg(org)) { // Assuming Ldc.normalizeOrg for validation/cleaning
                                 this.uniqueOrganizations.set(nname, org);
-                            } 
+                            }
                             else {
-                                Ldc.consoleOutput("....Skipped contact "+contact.organisationName+"- missing identifier. ");
+                                Ldc.consoleOutput("....Skipped contact " + contact.organisationName + "- missing identifier. ");
                                 org = null;
                             }
                         }
@@ -122,33 +120,20 @@ export let Ldc_EGDI = {
         Ldc.consoleOutput("EGDI CSW ETL finished. Extracted " + this.uniqueOrganizations.size + " unique organizations.");
     },
 
-    // NOTE: Augmentation functions are NOT included as the CSW doesn't offer a separate lookup API.
-
-    /**
-     * Processes the list of unique Organizations gathered during the Project processing.
-     * This is the conceptual inverse of the OpenAIRE ETL where Orgs were primary.
-     * @param {function} orgFunction - The function to call for each unique Organization.
-     */
     processUniqueOrganizations: async function (orgFunction) {
         Ldc.consoleOutput("Processing unique organizations gathered from records...");
         let index = 0;
         for (let [id, org] of this.uniqueOrganizations) {
             index++;
             Ldc.progress = Math.floor(100 * index / this.uniqueOrganizations.size);
-            // In a full implementation, you'd find all projects related to this org here.
-            // For now, we just pass the gathered organization object.
+
             await orgFunction(org);
         }
         Ldc.progress = 100;
         Ldc.consoleOutput("Unique organization processing finished.");
     },
 
-    /**
-     * RDF writing function now handles both Organizations and Projects.
-     */
     writeRdfText: async function (org, writerFunc) {
-        // --- Write Project RDF ---
-        // --- Write Organization RDF ---
         let item = `
 <${org.identifier}> <http://purl.org/dc/terms/identifier> "${org.identifier}" .
 <${org.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Organization> .
@@ -188,12 +173,8 @@ export let Ldc_EGDI = {
         }
 
     },
-    /**
- * Helper to safely extract deep contact information from a CSW record.
- */
+
     getContactOrganization: function (contactInfo) {
-        // Path: gmd:MD_Metadata -> gmd:identificationInfo -> gmd:MD_DataIdentification -> gmd:pointOfContact
-        // Or gmd:MD_Metadata -> gmd:contact
         let orgName = contactInfo.organisationName;
 
         let orgId = contactInfo.email; // Simple base64 hash for a stable ID

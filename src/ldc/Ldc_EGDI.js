@@ -38,7 +38,7 @@ import { Ldc } from './Ldc.js';
 export let Ldc_EGDI = {
     name: "EGDI",
     config: {
-        query: "https://egdi.geology.cz/csw/?request=GetRecords&query=(subject%3D%27Geology%27+OR+Subject%3D%27Hydrogeology%27)&format=application/json&MaxRecords=10000&StartPosition={startPosition}&language=eng&ElemetnSetName=full"
+        query: "https://egdi.geology.cz/csw/?request=GetRecords&query=(subject%3D%27Geology%27+OR+Subject%3D%27Hydrogeology%27)&format=application/json&MaxRecords=10000&StartPosition={startPosition}&language=eng&ElemetnSetName=summary"
     },
 
     uniqueOrganizations: new Map(),
@@ -47,7 +47,7 @@ export let Ldc_EGDI = {
 
     /**
      * The main ETL function now focuses on extracting Projects (Records) and their associated Organizations (Contacts).
-     * @param {function} orgFunction - The function to call for each processed Project.
+     * @param {function} orgFunction - The function to call for each processed Org.
      */
     processOrgsAndProjectsList: async function (orgFunction) {
         this.taskCount = 0;
@@ -151,22 +151,22 @@ export let Ldc_EGDI = {
                 continue;
             p.exists = true;
 
-            item = `    <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/description> "${Ldc.normalizeLiteral(p.description)}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/identifier> "${p.id}" .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Project> .
-    <https://proj.europe-geology.eu/${p.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${Ldc.normalizeLiteral(p.projectTitle)}" .
+            item = `    <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/description> "${Ldc.normalizeLiteral(p.description)}" .
+    <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/identifier> "${p.id}" .
+    <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/ns/dcat#dataset> .
+    <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://www.w3.org/2000/01/rdf-schema#label> "${Ldc.normalizeLiteral(p.projectTitle)}" .
 `;
             writerFunc(item);
 
             if (p.relations) for (let rel of p.relations) {
-                item = `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .
+                item = `        <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.identifier}> .
 `;
                 writerFunc(item);
             }
             let kwList = await this.getKeywords(p.description);
 
             for (let kw of kwList.summary) {
-                item = `        <https://proj.europe-geology.eu/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
+                item = `        <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
 `;
                 writerFunc(item);
             }

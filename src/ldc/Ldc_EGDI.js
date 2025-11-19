@@ -82,6 +82,9 @@ export let Ldc_EGDI = {
                         description: record.abstract,
                         relations: [] // This will hold the organizations (contacts)
                     };
+
+                    project.keywords = record.keywords;
+
                     Ldc.normalizeProj(project); // Assuming Ldc.normalizeProj exists for URI cleaning
 
                     let allContacts = record.contacts || [];
@@ -134,6 +137,7 @@ export let Ldc_EGDI = {
     },
 
     writeRdfText: async function (org, writerFunc) {
+        Ldc.consoleOutput("Write organization " + org.name);
         let item = `
 <${org.identifier}> <http://purl.org/dc/terms/identifier> "${org.identifier}" .
 <${org.identifier}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.europa.eu/s66#Organization> .
@@ -143,13 +147,32 @@ export let Ldc_EGDI = {
         writerFunc(item);
 
         for (let p of org.projects) {
-            item = `    <${org.identifier}> <http://purl.org/dc/terms/relation> <https://proj.europe-geology.eu/${p.identifier}> .
+            item = `    <${org.identifier}> <http://purl.org/dc/terms/relation> <https://metadata.europe-geology.eu/record/basic/${p.identifier}> .
 `;
             writerFunc(item);
 
             if (p.exists)
                 continue;
             p.exists = true;
+
+            let freeKeywords = [], projKeywords = [];
+            if (p.keywords) for (let rel of p.keywords) {
+                if (rel.uri && rel.uri.indexOf("/keyword/") != -1) {
+                    item = `        <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/subject> <${rel.uri}> .
+`;
+                    projKeywords.push(item);
+                }
+                else if (rel.uri && rel.uri.indexOf("/project/") != -1) {
+                    item = `        <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/relation> <${rel.uri}> .
+`;
+                    projKeywords.push(item);
+                } else if (rel.title) {
+                    freeKeywords.push(rel.title);
+                }
+            }
+            if (freeKeywords.length > 0) {
+                p.description += " Keywords: " + freeKeywords.join(", ");
+            }
 
             item = `    <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/description> "${Ldc.normalizeLiteral(p.description)}" .
     <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/identifier> "${p.id}" .
@@ -163,8 +186,12 @@ export let Ldc_EGDI = {
 `;
                 writerFunc(item);
             }
-            let kwList = await this.getKeywords(p.description);
 
+            for (let rel of projKeywords) {
+                writerFunc(rel);
+            }
+
+            let kwList = await this.getKeywords(p.description);
             for (let kw of kwList.summary) {
                 item = `        <https://metadata.europe-geology.eu/record/basic/${p.identifier}> <http://purl.org/dc/terms/subject> <${kw.uri}> .
 `;

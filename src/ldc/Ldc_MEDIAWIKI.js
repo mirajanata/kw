@@ -1,4 +1,7 @@
 /*
+
+** THIS IS A PLACEHOLDER **
+
 Ldc_MEDIAWIKI is a Ldc famework source object for an Extract, Transform, Load (ETL) process designed to pull project and organization data from MEDIAWIKI .
 
 Key Components & Workflow

@@ -1,25 +1,17 @@
 /*
-Ldc_EGDI is a Ldc famework source object for an Extract, Transform, Load (ETL) process designed to pull project and organization data from the European Geological Data Infrastructure (EGDI) Catalogue Service for the Web (CSW) .
+Ldc_MEDIAWIKI is a Ldc famework source object for an Extract, Transform, Load (ETL) process designed to pull project and organization data from MEDIAWIKI .
 
 Key Components & Workflow
 
     Configuration (config):
 
-        Defines the base OGC CSW GetRecords query to the EGDI service (https://egdi.geology.cz/csw/).
+		Defines the base query to the MEDIAWIKI service 
 
-        The query specifically requests records with Subject='Geology' or Subject='Hydrogeology'.
-
-        It uses pagination via a {startPosition} placeholder for iterative fetching.
 
     Data Harvesting (processOrgsAndProjectsList):
 
-        This is the main function that iteratively queries the EGDI CSW until all records (totalRecords) are retrieved.
+        This is the main function that iteratively queries the MEDIAWIKI until all records are retrieved.
 
-        Extraction: For each record (Project), it extracts the title, ID, abstract, and contact information.
-
-        Transformation/Aggregation: It extracts all contacts from a record and uses a normalized name (nname) to ensure only unique organizations are stored in the uniqueOrganizations map.
-
-        Each unique organization object keeps a list (projects) of the projects it is associated with.
 
     Organization Processing (processUniqueOrganizations):
 
@@ -35,10 +27,10 @@ Key Components & Workflow
 
 import { Ldc } from './Ldc.js';
 
-export let Ldc_EGDI = {
-    name: "EGDI",
+export let Ldc_MEDIAWIKI = {
+    name: "MEDIAWIKI",
     config: {
-        query: "https://egdi.geology.cz/csw/?request=GetRecords&query=(subject%3D%27Geology%27+OR+Subject%3D%27Hydrogeology%27)&format=application/json&MaxRecords=10000&StartPosition={startPosition}&language=eng&ElemetnSetName=summary"
+        query: " https://smw.geosphere.at/rest.php/v1/page/Expert_1 "
     },
 
     uniqueOrganizations: new Map(),
@@ -54,12 +46,12 @@ export let Ldc_EGDI = {
         let startPosition = 1;
         let totalRecords = Infinity;
         let index = Ldc.progress = 0;
-        Ldc.fileName = "Ldc_EGDI.txt";
+        Ldc.fileName = "Ldc_MEDIAWIKI.txt";
 
 
         this.uniqueOrganizations.clear();
 
-        Ldc.consoleOutput("Starting ETL for EGDI CSW (Organization/Project Structure)...");
+        Ldc.consoleOutput("Starting ETL for MEDIAWIKI (Organization/Project Structure)...");
 
         while (startPosition <= totalRecords) {
             let currentQuery = this.config.query.replaceAll("{startPosition}", startPosition);
@@ -76,7 +68,7 @@ export let Ldc_EGDI = {
                     Ldc.progress = Math.floor(100 * index / totalRecords);
                     Ldc.consoleOutput("-------- Processing record: " + record.title + " - " + record.id);
                     let project = {
-                        source: "EGDI_CSW",
+                        source: "MEDIAWIKI",
                         id: record.id,
                         projectTitle: record.title,
                         description: record.abstract,
@@ -110,7 +102,7 @@ export let Ldc_EGDI = {
             }
             catch (error) {
                 console.trace();
-                Ldc.consoleOutput(`ERROR reading data from CSW at StartPosition ${startPosition}: ${error.message}`);
+                Ldc.consoleOutput(`ERROR reading data from MEDIAWIKI at StartPosition ${startPosition}: ${error.message}`);
                 break;
             }
         }
@@ -118,9 +110,9 @@ export let Ldc_EGDI = {
         Ldc.progress = 100;
         this.taskCount = 0;
 
-        await Ldc_EGDI.processUniqueOrganizations(orgFunction);
+        await Ldc_MEDIAWIKI.processUniqueOrganizations(orgFunction);
 
-        Ldc.consoleOutput("EGDI CSW ETL finished. Extracted " + this.uniqueOrganizations.size + " unique organizations.");
+        Ldc.consoleOutput("MEDIAWIKI ETL finished. Extracted " + this.uniqueOrganizations.size + " unique organizations.");
     },
 
     processUniqueOrganizations: async function (orgFunction) {
@@ -213,10 +205,10 @@ export let Ldc_EGDI = {
             id: orgId,
             name: orgName,
             email: contactInfo.email,
-            source: "EGDI_CSW",
+            source: "MEDIAWIKI",
             projects: []
         };
     }
 };
 
-Ldc.addSource(Ldc_EGDI);
+Ldc.addSource(Ldc_MEDIAWIKI);
